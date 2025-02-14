@@ -5,64 +5,78 @@ import re
 from bs4 import BeautifulSoup
 from openpyxl import Workbook
 
-wb = Workbook()
-ws = wb.active
-
-
-
 # Login credentials
-email_user = "YOUR_EMAIL@COMPANY.COM"
-email_password = " EN TER YOU R APP PASS WORD"
+email_user = "ramnisanth1999@gmail.com"
+email_password = "PLA CE U R PAS WRD HRE"
 
 # Connect to the Gmail IMAP server
 imap = imaplib.IMAP4_SSL("imap.gmail.com")
 
-try:
-    imap.login(email_user, email_password)
-    imap.select("inbox")
-    sender_email = "freetier@costalerts.amazonaws.com"
-    status, messages = imap.search(None, f'FROM "{sender_email}"')
+def fetch_and_process_emails(imap, email_user, email_password, sender_email_list, output_file):
+    try:
+        imap.login(email_user, email_password)
+        imap.select("inbox")
 
-    if status == "OK":
-        email_ids = messages[0].split()  
-        for email_id in email_ids:
-            res, msg = imap.fetch(email_id, "(RFC822)")
-            for response_part in msg:
-                if isinstance(response_part, tuple):
-                    msg = email.message_from_bytes(response_part[1])
-                    match = re.search(r"<!DOCTYPE.*?</html>", str(msg), re.DOTALL | re.IGNORECASE)
-                    if match:
-                      extracted_html = match.group(0) 
-                      soup = BeautifulSoup(extracted_html, "html.parser")
-                      text = soup.get_text(separator=" ")  
-                      print(text)
-                      ws.append([text])
-                    else:
-                      print("No HTML content found.")
-                    email_subject = msg["Subject"]
-                    email_date = msg["Date"]
-                    body = None
-                    content_type = "Unknown"
+        wb = Workbook()
+        ws = wb.active
 
-                    if msg.is_multipart():
-                        for part in msg.walk():
-                            content_type = part.get_content_type()
-                            content_disposition = str(part.get("Content-Disposition"))
+        for sender_email in sender_email_list:
+            status, messages = imap.search(None, f'FROM "{sender_email}"')
 
-                            if content_type == "text/plain" and "attachment" not in content_disposition:
-                                body = part.get_payload(decode=True).decode("utf-8", errors="ignore")
-                                break  
-                    else:
-                        content_type = msg.get_content_type()
-                        body = msg.get_payload(decode=True).decode("utf-8", errors="ignore")
-                    ws.append([body])
+            if status == "OK":
+                email_ids = messages[0].split()
+                for email_id in email_ids:
+                    res, msg = imap.fetch(email_id, "(RFC822)")
 
-    else:
-        print(f"No emails found from {sender_email}.")
+                    for response_part in msg:
+                        if isinstance(response_part, tuple):
+                            msg = email.message_from_bytes(response_part[1])
 
-except Exception as e:
-    print(f"Error: {e}")
+                            # Extract plain text content
+                            body = None
+                            if msg.is_multipart():
+                                for part in msg.walk():
+                                    content_type = part.get_content_type()
+                                    content_disposition = str(part.get("Content-Disposition"))
 
-finally:
-    wb.save("filename.xlsx")
-    imap.logout()
+                                    if content_type == "text/plain" and "attachment" not in content_disposition:
+                                        body = part.get_payload(decode=True).decode("utf-8", errors="ignore")
+                                        break
+                            else:
+                                body = msg.get_payload(decode=True).decode("utf-8", errors="ignore")
+
+                            # Extract HTML content if present
+                            html_content = None
+                            for part in msg.walk():
+                                if part.get_content_type() == "text/html":
+                                    html_content = part.get_payload(decode=True).decode("utf-8", errors="ignore")
+                                    break
+
+                            text = body if body else "No Text Content Found"
+
+                            # Parse HTML safely
+                            if html_content:
+                                try:
+                                    soup = BeautifulSoup(html_content, "html.parser")  # Use HTML parser
+                                    text = soup.get_text(separator=" ").strip()
+                                except Exception as e:
+                                    print(f"Error parsing HTML: {e}")
+                                    text = "HTML Parsing Error"
+
+                            # Store extracted text in Excel (only email content in column A)
+                            ws.append([text])
+            else:
+                print(f"No emails found from {sender_email}.")
+
+    except Exception as e:
+        print(f"Error: {e}")
+
+    finally:
+        wb.save(output_file)
+        imap.logout()
+
+
+########################### place all your email ids here ########################################
+
+email_list = ["Amex_Recruiting_AXP@invalidemail.com", "orderstatus@costco.com", "discover@services.discover.com", "Jacobs.Recruitment@jacobs.global","jobalerts-noreply@linkedin.com", "eoja.fa.sender@workflow.email.ap-sydney-1.ocs.oraclecloud.com" ]
+fetch_and_process_emails(imap, email_user, email_password, email_list, "/content/data.xlsx")
