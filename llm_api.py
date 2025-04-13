@@ -1,6 +1,6 @@
 import os
 from groq import Groq
-api_key = "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"
+api_key = "replaced the api key"
 client = Groq(api_key=api_key)
 def summarize_email(email_body):
     try:
