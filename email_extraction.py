@@ -7,7 +7,7 @@ from openpyxl import Workbook
 
 # Login credentials
 email_user = "ramnisanth1999@gmail.com"
-email_password = "PLA CE U R PAS WRD HRE"
+email_password = "oglv ipeo psgb smah"
 
 # Connect to the Gmail IMAP server
 imap = imaplib.IMAP4_SSL("imap.gmail.com")
@@ -79,4 +79,4 @@ def fetch_and_process_emails(imap, email_user, email_password, sender_email_list
 ########################### place all your email ids here ########################################
 
 email_list = ["Amex_Recruiting_AXP@invalidemail.com", "orderstatus@costco.com", "discover@services.discover.com", "Jacobs.Recruitment@jacobs.global","jobalerts-noreply@linkedin.com", "eoja.fa.sender@workflow.email.ap-sydney-1.ocs.oraclecloud.com" ]
-fetch_and_process_emails(imap, email_user, email_password, email_list, "/content/data.xlsx")
+fetch_and_process_emails(imap, email_user, email_password, email_list, "data.xlsx")
